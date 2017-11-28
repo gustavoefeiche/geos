@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+
+import argparse as argp
+import requests
+import sys
+import json
+from lburl import LOAD_BALANCER_URL
+
+parser = argp.ArgumentParser(description='GEOS command-line interface')
+parser.add_argument("-r", "--request", help="Request type (GET, POST, PUT, DELETE)")
+parser.add_argument("-d", "--data", help="Data in JSON format")
+args = parser.parse_args()
+
+hostname = LOAD_BALANCER_URL
+response = ""
+
+if args.request in ["POST","PUT","DELETE"]:
+    if not args.data:
+        print("POST, PUT and DELETE request require JSON data")
+        print("geos -h for help")
+        sys.exit()
+
+if args.data:
+    data = json.loads(args.data)
+
+try:
+    if args.request == "POST":
+        response = requests.post(hostname + "/post", json=data)
+    elif args.request == "GET":
+        response = requests.get(hostname + "/get")
+    elif args.request == "PUT":
+        response = requests.put(hostname + "/put", json=data)
+    elif args.request == "DELETE":
+        response = requests.delete(hostname + "/delete", json=data)
+except:
+    print("Connection failed! Maybe the service is still being deployed?")
+    sys.exit()
+
+if response:
+    print(response.text)
+
+if not args.data and not response:
+    print("GEOS application CLI")
