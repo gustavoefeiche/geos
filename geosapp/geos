@@ -5,39 +5,84 @@ import requests
 import sys
 import json
 from lburl import LOAD_BALANCER_URL
+from pprint import pprint
 
 parser = argp.ArgumentParser(description='GEOS command-line interface')
-parser.add_argument("-r", "--request", help="Request type (GET, POST, PUT, DELETE)")
-parser.add_argument("-d", "--data", help="Data in JSON format")
+parser.add_argument("-u","--users", help="add, list, update, delete")
+parser.add_argument("-n", "--username", help="Get info about this user")
 args = parser.parse_args()
 
 hostname = LOAD_BALANCER_URL
 response = ""
-
-if args.request in ["POST","PUT","DELETE"]:
-    if not args.data:
-        print("POST, PUT and DELETE request require JSON data")
-        print("geos -h for help")
-        sys.exit()
-
-if args.data:
-    data = json.loads(args.data)
+user_info = {
+        "Email": "",
+        "First Name": "",
+        "Last Name": "",
+        "Username": ""
+    }
 
 try:
-    if args.request == "POST":
-        response = requests.post(hostname + "/post", json=data)
-    elif args.request == "GET":
-        response = requests.get(hostname + "/get")
-    elif args.request == "PUT":
-        response = requests.put(hostname + "/put", json=data)
-    elif args.request == "DELETE":
-        response = requests.delete(hostname + "/delete", json=data)
-except:
+    if args.users == "add":
+        email = input("Email: ")
+        fname = input("First Name: ")
+        lname = input("Last Name: ")
+        uname = input("Username: ")
+        
+        if not  "" in [email, fname, lname, uname]:
+            data = {
+                "email": "{}".format(email),
+                "fname": "{}".format(fname),
+                "lname": "{}".format(lname),
+                "uname": "{}".format(uname),
+            }
+            response = requests.post(hostname, json=data)
+        else:
+            print("Fields can't be blank!")
+            sys.exit()
+
+    elif args.users == "list":
+        if args.username:
+            response = requests.get(hostname + "/{}".format(args.username))
+        else:
+            response = requests.get(hostname)
+
+    elif args.users == "update":
+        email = input("Email: ")
+        fname = input("First Name: ")
+        lname = input("Last Name: ")
+        uname = input("Username: ")
+        
+        data = {}
+
+        if email != "":
+            data["email"] = email
+        if fname != "":
+            data["fname"] = fname
+        if lname != "":
+            data["lname"] = lname
+        if uname != "":
+            data["uname"] = uname
+
+        response = requests.put(hostname + "/{0}".format(uname), json=data)    
+        
+    elif args.users == "delete":
+        email = input("Email: ")
+        uname = input("Username: ")
+
+        data = {
+            "email": email,
+            "uname": uname
+        }
+
+        response = requests.delete(hostname + "/{0}/{1}".format(uname, email), json=data)
+except KeyboardInterrupt:
+    sys.exit()
+except Exception:
     print("Connection failed! Maybe the service is still being deployed?")
     sys.exit()
 
 if response:
-    print(response.text)
+    pprint(response.json(), width=20)
 
-if not args.data and not response:
+if not args.users and not response:
     print("GEOS application CLI")

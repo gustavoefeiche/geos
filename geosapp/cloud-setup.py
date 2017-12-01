@@ -153,6 +153,9 @@ geos_security_group_id = geos_security_group['GroupId']
 ec2_client.authorize_security_group_ingress(
     GroupId=geos_security_group_id, IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=80, ToPort=80)
 
+ec2_client.authorize_security_group_ingress(
+    GroupId=geos_security_group_id, IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=27017, ToPort=27017)
+
 ec2_client.create_tags(
     Resources=[
         geos_security_group_id
@@ -175,9 +178,9 @@ keypair_file.close()
 # Create launch configuration for autoscaling instances
 print(STATUS_MSGS['STATUS_CREATE_LAUNCH_CONFIG'])
 if region == 'us-east-1':
-    image_id = 'ami-e29f1398'
+    image_id = 'ami-caa930b0'
 elif region == 'us-east-2':
-    image_id = 'ami-07173962'
+    image_id = 'ami-945b72f1'
 
 geos_launch_config = as_client.create_launch_configuration(
     LaunchConfigurationName=AWS_INFO['AWS_LAUNCH_CONFIG_NAME'],
@@ -247,9 +250,27 @@ as_client.attach_load_balancer_target_groups(
     ]
 )
 
+# Attach public addresses to instances
+# ids = []
+# ips = []
+# instances = ec2_client.describe_instances()
+
+# for i in instances['Reservations']:
+#     ids.append(i['Instances'][0]['InstanceId'])
+
+# for i in ids:
+#     address = ec2_client.allocate_address(Domain='vpc')
+#     ips.append(address['PublicIp'])
+
+# for i in range(len(ips)):
+#     ec2_client.associate_address(
+#         InstanceId=ids[i],
+#         PublicIp=ips[i],
+#     )
+
 # Send URL to CLI
 lburl = open('lburl.py', 'w')
-lburl.write('LOAD_BALANCER_URL = "http://{}"'.format(geos_load_balancer_url))
+lburl.write('LOAD_BALANCER_URL = "http://{}/api/users"'.format(geos_load_balancer_url))
 lburl.close()
 
 print(STATUS_MSGS['STATUS_THE_END'])
